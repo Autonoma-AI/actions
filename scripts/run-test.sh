@@ -13,7 +13,8 @@ if [ "$max_wait_minutes" -lt 10 ] || [ "$max_wait_minutes" -gt 20 ]; then
   max_wait_minutes=10
 fi
 
-echo "📡 Calling endpoint: $trigger_url"
+run_url="$trigger_url/$test_id$"
+echo "📡 Calling endpoint: $run_url"
 
 response=$(curl -s -w "%{http_code}" \
   -X POST \
@@ -22,7 +23,7 @@ response=$(curl -s -w "%{http_code}" \
   -H "Content-Type: application/json" \
   --connect-timeout 60 \
   --max-time 60 \
-  "$trigger_url" \
+  "$run_url" \
   -o response_body.json)
 
 http_code="${response: -3}"
