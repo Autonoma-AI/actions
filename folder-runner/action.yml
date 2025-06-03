@@ -1,6 +1,6 @@
 name: "Folder Test Runner"
-description: "Triggers folder/directory test run and polls for completion status"
-author: "Autonoma ai"
+description: "Triggers folder test run and polls for completion status"
+author: "Autonoma AI"
 branding:
   icon: "folder"
   color: "green"
@@ -20,7 +20,7 @@ inputs:
     default: "10"
 outputs:
   run-id:
-    description: "ID of the test run (if returned by API)"
+    description: "ID of the test run returned by API"
   final-status:
     description: "Final status of the test run"
 runs:

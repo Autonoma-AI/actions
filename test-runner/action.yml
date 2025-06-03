@@ -1,6 +1,6 @@
 name: "Single Test Runner"
 description: "Triggers individual test run and polls for completion status"
-author: "Autonoma ai"
+author: "Autonoma AI"
 branding:
   icon: "play-circle"
   color: "blue"
@@ -20,7 +20,7 @@ inputs:
     default: "10"
 outputs:
   run-id:
-    description: "ID of the test to run"
+    description: "ID of the test run returned by API"
   final-status:
     description: "Final status of the test run"
 runs:
