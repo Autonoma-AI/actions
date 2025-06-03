@@ -44,7 +44,7 @@ runs:
         chmod +x ${{ github.action_path }}/../scripts/poll-status.sh
         ${{ github.action_path }}/../scripts/poll-status.sh \
           "https://autonoma.app/api/run/test" \
+          "${{ steps.run-tests.outputs.run-id }}" \
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
-          "${{ inputs.client-secret }}" \
-          "${{ steps.run-tests.outputs.run-id }}"
+          "${{ inputs.client-secret }}"
