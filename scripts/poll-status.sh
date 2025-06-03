@@ -26,7 +26,7 @@ while true; do
   elapsed_minutes=$((elapsed / 60))
   
   if [ $elapsed -ge $max_wait ]; then
-    echo "⏰ Timeout reached after ${elapsed_minutes} minutes"
+    echo "⏰ Timeout reached after ${elapsed_minutes} minutes" >> $GITHUB_OUTPUT
     echo "final-status=timeout" >> $GITHUB_OUTPUT
     exit 1
   fi
@@ -56,14 +56,14 @@ while true; do
       
       case "$status" in
         "passed")
-          echo "message=✅ Tests completed successfully!"
+          echo "message=✅ Tests completed successfully!" >> $GITHUB_OUTPUT
           echo "final-status=success" >> $GITHUB_OUTPUT
           echo "url=$url" >> $GITHUB_OUTPUT
           rm -f status_response.json
           exit 0
           ;;
         "failed")
-          echo "message=❌ Tests failed!"
+          echo "message=❌ Tests failed!" >> $GITHUB_OUTPUT
           echo "Response details:"
           cat status_response.json
           echo "final-status=failed" >> $GITHUB_OUTPUT
