@@ -23,7 +23,7 @@ while true; do
   elapsed_minutes=$((elapsed / 60))
   
   if [ $elapsed -ge $max_wait ]; then
-    echo "⏰ Timeout reached after ${elapsed_minutes} minutes" >> $GITHUB_OUTPUT
+    echo "message=⏰ Timeout reached after ${elapsed_minutes} minutes" >> $GITHUB_OUTPUT
     echo "final-status=timeout" >> $GITHUB_OUTPUT
     exit 1
   fi
@@ -83,7 +83,7 @@ while true; do
       echo "⚠️ Empty response body"
     fi
   else
-    echo "❌ Status check failed (HTTP $http_code)"
+    echo "message=❌ Status check failed (HTTP $http_code)" >> $GITHUB_OUTPUT
     if [ -f status_response.json ]; then
       echo "Response body:"
       cat status_response.json
