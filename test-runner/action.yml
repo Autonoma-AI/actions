@@ -32,7 +32,7 @@ runs:
       run: |
         chmod +x ${{ github.action_path }}/../scripts/run-test.sh
         ${{ github.action_path }}/../scripts/run-test.sh \
-          "https://api.prod.autonoma.app/v1/run/test" \
+          "https://autonoma.app/api/run/test" \
           "${{ inputs.test-id }}" \
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
@@ -43,7 +43,7 @@ runs:
       run: |
         chmod +x ${{ github.action_path }}/../scripts/poll-status.sh
         ${{ github.action_path }}/../scripts/poll-status.sh \
-          "https://api.prod.autonoma.app/v1/run/test" \
+          "https://autonoma.app/api/run/test" \
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
           "${{ inputs.client-secret }}" \
