@@ -1,0 +1,50 @@
+name: "Single Test Runner"
+description: "Triggers individual test run and polls for completion status"
+author: "Autonoma ai"
+branding:
+  icon: "play-circle"
+  color: "blue"
+inputs:
+  test-id:
+    description: "Test id for run test"
+    required: true
+  client-id:
+    description: "Autonoma client ID for API authentication"
+    required: true
+  client-secret:
+    description: "Autonoma client secret for API authentication"
+    required: true
+  max-wait-time:
+    description: "Maximum wait time in minutes before timeout (range: 10-20 minutes)"
+    required: false
+    default: "10"
+outputs:
+  run-id:
+    description: "ID of the test to run"
+  final-status:
+    description: "Final status of the test run"
+runs:
+  using: "composite"
+  steps:
+    - name: Trigger Single Test Run
+      id: run-tests
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/../scripts/trigger-tests.sh
+        ${{ github.action_path }}/../scripts/trigger-tests.sh \
+          "https://api.prod.autonoma.app/api/run/folder" \
+          "${{ inputs.test-id }}" \
+          "${{ inputs.max-wait-time }}" \
+          "${{ inputs.client-id }}" \
+          "${{ inputs.client-secret }}"
+    - name: Poll Test Status
+      id: poll-status
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/../scripts/poll-status.sh
+        ${{ github.action_path }}/../scripts/poll-status.sh \
+          "https://api.yourservice.com/api/tests/status" \
+          "${{ inputs.max-wait-time }}" \
+          "${{ inputs.client-id }}" \
+          "${{ inputs.client-secret }}" \
+          "${{ steps.run-tests.outputs.run-id }}"
