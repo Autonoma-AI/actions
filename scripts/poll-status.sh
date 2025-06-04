@@ -51,9 +51,6 @@ while true; do
       url=$(jq -r '.url // empty' status_response.json 2>/dev/null || echo "")
       
       echo "📊 Current status: $status"
-      if [ -n "$url" ]; then
-        echo "🔗 URL: $url"
-      fi
       
       case "$status" in
         "passed")
@@ -73,7 +70,7 @@ while true; do
           exit 1
           ;;
         "running"|"pending")
-          echo "⏳ Tests still running..."
+          echo "⏳ Tests still running, waiting 10s before next poll..."
           ;;
         "")
           echo "⚠️ No status field found in response"
@@ -116,6 +113,5 @@ while true; do
   
   rm -f status_response.json
   
-  echo "⏸️ Waiting 10s before next poll..."
   sleep $poll_interval
 done
