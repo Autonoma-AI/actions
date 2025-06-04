@@ -11,6 +11,8 @@ client_secret=$5
 max_wait=$((max_wait_minutes * 60))
 poll_interval=10
 start_time=$(date +%s)
+first_404_time=""
+max_404_wait=60 
 
 final_status_url="${status_url}/${test_id}"
 
@@ -42,6 +44,8 @@ while true; do
   http_code="${response: -3}"
   
   if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+    first_404_time=""
+    
     if [ -f status_response.json ]; then
       status=$(jq -r '.status // empty' status_response.json 2>/dev/null || echo "")
       url=$(jq -r '.url // empty' status_response.json 2>/dev/null || echo "")
@@ -82,7 +86,24 @@ while true; do
     else
       echo "⚠️ Empty response body"
     fi
+  elif [ "$http_code" = "404" ]; then
+    if [ -z "$first_404_time" ]; then
+      first_404_time=$current_time
+      echo "🔍 Resource not found (404) - starting grace period..."
+    else
+      time_in_404=$((current_time - first_404_time))
+      if [ $time_in_404 -ge $max_404_wait ]; then
+        echo "❌ Resource still not found after ${max_404_wait}s grace period"
+        echo "final-status=error" >> $GITHUB_OUTPUT
+        rm -f status_response.json
+        exit 1
+      else
+        remaining_404_time=$((max_404_wait - time_in_404))
+        echo "🔍 Resource not found (404) - ${remaining_404_time}s remaining in grace period"
+      fi
+    fi
   else
+    first_404_time=""
     echo "❌ Status check failed (HTTP $http_code)"
     if [ -f status_response.json ]; then
       echo "Response body:"
