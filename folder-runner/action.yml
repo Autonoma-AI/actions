@@ -21,8 +21,16 @@ inputs:
 outputs:
   run-id:
     description: "ID of the test run returned by API"
+    value: ${{ steps.run-tests.outputs.run-id }}
   final-status:
     description: "Final status of the test run"
+    value: ${{ steps.poll-status.outputs.final-status }}
+  message:
+    description: "Status message from the test run"
+    value: ${{ steps.poll-status.outputs.message }}
+  url:
+    description: "URL to view test results"
+    value: ${{ steps.poll-status.outputs.url }}
 runs:
   using: "composite"
   steps:
