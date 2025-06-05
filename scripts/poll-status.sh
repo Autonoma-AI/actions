@@ -26,6 +26,7 @@ while true; do
   elapsed_minutes=$((elapsed / 60))
   
   # Remove this after move run creation reactor 
+  echo "------------------ type $type"
   if [ "$type" = "folder" ]; then
     echo "⏱️ Folder tests need more initialization time, waiting 30 seconds..."
     sleep 30
