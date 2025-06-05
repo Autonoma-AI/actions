@@ -7,6 +7,7 @@ test_id=$2
 max_wait_minutes=$3
 client_id=$4
 client_secret=$5
+type=$6
 
 max_wait=$((max_wait_minutes * 60))
 poll_interval=10
@@ -24,6 +25,12 @@ while true; do
   elapsed=$((current_time - start_time))
   elapsed_minutes=$((elapsed / 60))
   
+  # Remove this after move run creation reactor 
+  if [ "$type" = "folder" ]; then
+    echo "⏱️ Folder tests need more initialization time, waiting 30 seconds..."
+    sleep 30
+  fi
+
   if [ $elapsed -ge $max_wait ]; then
     echo "message=⏰ Timeout reached after ${elapsed_minutes} minutes" >> $GITHUB_OUTPUT
     echo "final-status=timeout" >> $GITHUB_OUTPUT
@@ -31,30 +38,17 @@ while true; do
   fi
   
   echo "📡 Checking status... (${elapsed_minutes}m elapsed)"
-  echo "🔧 Full curl command being executed:"
-  echo "⏱️ Folder tests need more initialization time, waiting 30 seconds..."
-  sleep 30
   
   
-  # response=$(curl -s -w "%{http_code}" \
-  #   -H "autonoma-client-id: $client_id" \
-  #   -H "autonoma-client-secret: $client_secret" \
-  #   -H "Content-Type: application/json" \
-  #   --connect-timeout 60 \
-  #   --max-time 60 \
-  #   "$final_status_url" \
-  #   -o status_response.json)
-
   response=$(curl -s -w "%{http_code}" \
-      -H "autonoma-client-id: $client_id" \
-      -H "autonoma-client-secret: $client_secret" \
-      -H "Content-Type: application/json" \
-      -H "User-Agent: GitHub-Actions-Runner/1.0" \
-      --connect-timeout 60 \
-      --max-time 60 \
-      "$final_status_url" \
-      -o status_response.json)
-  
+    -H "autonoma-client-id: $client_id" \
+    -H "autonoma-client-secret: $client_secret" \
+    -H "Content-Type: application/json" \
+    --connect-timeout 60 \
+    --max-time 60 \
+    "$final_status_url" \
+    -o status_response.json)
+
   http_code="${response: -3}"
   
   if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then

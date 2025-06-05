@@ -44,7 +44,8 @@ runs:
           "${{ inputs.folder-id }}" \
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
-          "${{ inputs.client-secret }}"
+          "${{ inputs.client-secret }}" \
+          "folder"
     - name: Poll Test Status
       id: poll-status
       shell: bash
