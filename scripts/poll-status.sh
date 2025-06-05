@@ -32,6 +32,8 @@ while true; do
   
   echo "📡 Checking status... (${elapsed_minutes}m elapsed)"
   echo "🔧 Full curl command being executed:"
+  echo "⏱️ Folder tests need more initialization time, waiting 30 seconds..."
+  sleep 30
   
   
   # response=$(curl -s -w "%{http_code}" \
