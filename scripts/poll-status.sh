@@ -2,14 +2,6 @@
 
 echo "⏳ Starting status polling..."
 
-echo "Parameters received: $#"
-echo "1: $1"
-echo "2: $2" 
-echo "3: $3"
-echo "4: $4"
-echo "5: $5"
-echo "6: $6"
-
 status_url=$1
 test_id=$2
 max_wait_minutes=$3
@@ -34,7 +26,6 @@ while true; do
   elapsed_minutes=$((elapsed / 60))
   
   # Remove this after move run creation reactor 
-  echo "------------------ type $type"
   if [ "$type" = "folder" ]; then
     echo "⏱️ Folder tests need more initialization time, waiting 30 seconds..."
     sleep 30
