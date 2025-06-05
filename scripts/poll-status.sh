@@ -20,17 +20,17 @@ final_status_url="${status_url}/${test_id}"
 echo "🔍 Polling URL: $final_status_url"
 echo "⏰ Max wait time: ${max_wait_minutes} minutes"
 
+# Remove this after move run creation refactor 
+if [ "$type" = "folder" ]; then
+echo "⏱️ Folder tests need more initialization time, waiting 30 seconds..."
+sleep 30
+fi
+
 while true; do
   current_time=$(date +%s)
   elapsed=$((current_time - start_time))
   elapsed_minutes=$((elapsed / 60))
   
-  # Remove this after move run creation reactor 
-  if [ "$type" = "folder" ]; then
-    echo "⏱️ Folder tests need more initialization time, waiting 30 seconds..."
-    sleep 30
-  fi
-
   if [ $elapsed -ge $max_wait ]; then
     echo "message=⏰ Timeout reached after ${elapsed_minutes} minutes" >> $GITHUB_OUTPUT
     echo "final-status=timeout" >> $GITHUB_OUTPUT
