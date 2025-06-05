@@ -32,17 +32,26 @@ while true; do
   
   echo "📡 Checking status... (${elapsed_minutes}m elapsed)"
   echo "🔧 Full curl command being executed:"
-  echo "curl -s -w '%{http_code}' -H 'autonoma-client-id: ${client_id}' -H 'autonoma-client-secret: ***' -H 'Content-Type: application/json' --connect-timeout 60 --max-time 60 '${final_status_url}'"
   
   
+  # response=$(curl -s -w "%{http_code}" \
+  #   -H "autonoma-client-id: $client_id" \
+  #   -H "autonoma-client-secret: $client_secret" \
+  #   -H "Content-Type: application/json" \
+  #   --connect-timeout 60 \
+  #   --max-time 60 \
+  #   "$final_status_url" \
+  #   -o status_response.json)
+
   response=$(curl -s -w "%{http_code}" \
-    -H "autonoma-client-id: $client_id" \
-    -H "autonoma-client-secret: $client_secret" \
-    -H "Content-Type: application/json" \
-    --connect-timeout 60 \
-    --max-time 60 \
-    "$final_status_url" \
-    -o status_response.json)
+      -H "autonoma-client-id: $client_id" \
+      -H "autonoma-client-secret: $client_secret" \
+      -H "Content-Type: application/json" \
+      -H "User-Agent: GitHub-Actions-Runner/1.0" \
+      --connect-timeout 60 \
+      --max-time 60 \
+      "$final_status_url" \
+      -o status_response.json)
   
   http_code="${response: -3}"
   
