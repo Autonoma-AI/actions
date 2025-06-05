@@ -2,6 +2,14 @@
 
 echo "⏳ Starting status polling..."
 
+echo "Parameters received: $#"
+echo "1: $1"
+echo "2: $2" 
+echo "3: $3"
+echo "4: $4"
+echo "5: $5"
+echo "6: $6"
+
 status_url=$1
 test_id=$2
 max_wait_minutes=$3
