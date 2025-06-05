@@ -45,7 +45,6 @@ runs:
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
           "${{ inputs.client-secret }}" \
-          "test"
     - name: Poll Test Status
       id: poll-status
       shell: bash
@@ -56,4 +55,5 @@ runs:
           "${{ steps.run-tests.outputs.run-id }}" \
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
-          "${{ inputs.client-secret }}"
+          "${{ inputs.client-secret }}" \
+          "test"
