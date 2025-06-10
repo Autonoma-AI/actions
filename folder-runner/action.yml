@@ -40,7 +40,7 @@ runs:
       run: |
         chmod +x ${{ github.action_path }}/../scripts/run-test.sh
         ${{ github.action_path }}/../scripts/run-test.sh \
-          "https://autonoma.app/api/run/folder" \
+          "https://latest.prod.autonoma.app/api/run/folder" \
           "${{ inputs.folder-id }}" \
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
@@ -51,7 +51,7 @@ runs:
       run: |
         chmod +x ${{ github.action_path }}/../scripts/poll-status.sh
         ${{ github.action_path }}/../scripts/poll-status.sh \
-          "https://autonoma.app/api/run/folder" \
+          "https://latest.prod.autonoma.app/api/run/folder" \
           "${{ steps.run-tests.outputs.run-id }}" \
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
