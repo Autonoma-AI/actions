@@ -10,7 +10,9 @@ client_secret=$4
 type=$5  # "test" or "folder"
 
 RUN_TEST_URL="https://autonoma.app/api/run/test"
+RUN_STATUS_URL="https://autonoma.app/api/run/"
 RUN_FOLDER_URL="https://autonoma.app/api/run/folder"
+RUN_FOLDER_STATUS_URL="https://autonoma.app/api/run/folder"
 
 export GITHUB_OUTPUT=$(mktemp)
 
@@ -22,8 +24,10 @@ fi
 
 if [ "$type" = "test" ]; then
     BASE_URL="$RUN_TEST_URL"
+    BASE_POLL_URL="$RUN_STATUS_URL"
 elif [ "$type" = "folder" ]; then
     BASE_URL="$RUN_FOLDER_URL"
+    BASE_POLL_URL="$RUN_FOLDER_STATUS_URL"
 else
     echo "❌ Invalid type: $type. Must be 'test' or 'folder'"
     exit 1
@@ -70,7 +74,7 @@ fi
 echo ""
 echo "=== Step 2: Polling for status ==="
 /autonoma/poll-status.sh \
-    "$BASE_URL" \
+    "$BASE_POLL_URL" \
     "$RUN_ID" \
     "$max_wait_minutes" \
     "$client_id" \

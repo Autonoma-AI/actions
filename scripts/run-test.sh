@@ -32,7 +32,7 @@ if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
   echo "✅ Test run triggered successfully (HTTP $http_code)"
   
   if [ -f response_body.json ]; then
-    run_id=$(jq -r '.runID // .folderRunID ' response_body.json 2>/dev/null || echo "")
+    run_id=$(jq -r '.run_id // .folder_run_id ' response_body.json 2>/dev/null || echo "")
     if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
       echo "run-id=$run_id" >> $GITHUB_OUTPUT
       echo "📋 Run ID: $run_id"
