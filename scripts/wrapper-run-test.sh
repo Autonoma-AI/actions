@@ -9,9 +9,9 @@ client_id=$3
 client_secret=$4
 type=$5  # "test" or "folder"
 
-RUN_TEST_URL="https://autonoma.app/api/run/test"
-RUN_STATUS_URL="https://autonoma.app/api/run/"
-RUN_FOLDER_URL="https://autonoma.app/api/run/folder"
+RUN_TEST_URL="https://autonoma.app/api/test"
+RUN_STATUS_URL="https://autonoma.app/api/run"
+RUN_FOLDER_URL="https://autonoma.app/api/folder"
 RUN_FOLDER_STATUS_URL="https://autonoma.app/api/run/folder"
 
 export GITHUB_OUTPUT=$(mktemp)

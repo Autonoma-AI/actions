@@ -13,7 +13,7 @@ if [ "$max_wait_minutes" -lt 10 ] || [ "$max_wait_minutes" -gt 20 ]; then
   max_wait_minutes=10
 fi
 
-run_url="$trigger_url/$test_id"
+run_url="$trigger_url/$test_id/run"
 echo "📡 Calling endpoint: $run_url"
 
 response=$(curl -s -w "%{http_code}" \

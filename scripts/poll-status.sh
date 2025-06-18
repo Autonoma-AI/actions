@@ -13,7 +13,7 @@ max_wait=$((max_wait_minutes * 60))
 poll_interval=10
 start_time=$(date +%s)
 
-final_status_url="${status_url}/${test_id}"
+final_status_url="${status_url}/${test_id}/status"
 
 echo "🔍 Polling URL: $final_status_url"
 echo "⏰ Max wait time: ${max_wait_minutes} minutes"
