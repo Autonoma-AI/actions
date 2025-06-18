@@ -21,6 +21,7 @@ response=$(curl -s -w "%{http_code}" \
   -H "autonoma-client-id: $client_id" \
   -H "autonoma-client-secret: $client_secret" \
   -H "Content-Type: application/json" \
+  -d '{"source": "ci-cd"}'
   --connect-timeout 60 \
   --max-time 60 \
   "$run_url" \
