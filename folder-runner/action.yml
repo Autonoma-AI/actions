@@ -18,6 +18,9 @@ inputs:
     description: "Maximum wait time in minutes before timeout (range: 10-20 minutes)"
     required: false
     default: "10"
+  environment-application-version-id:
+    description: "The ID of the application version to run the tests on"
+    required: false
 outputs:
   run-id:
     description: "ID of the test run returned by API"
@@ -44,7 +47,8 @@ runs:
           "${{ inputs.folder-id }}" \
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
-          "${{ inputs.client-secret }}"
+          "${{ inputs.client-secret }}" \
+          "${{ inputs.environment-application-version-id }}"
     - name: Poll Test Status
       id: poll-status
       shell: bash
