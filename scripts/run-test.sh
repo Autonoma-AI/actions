@@ -18,7 +18,7 @@ fi
 if [ -n "$environment_application_version_id" ]; then
   # If the version ID is present, include it in the payload.
   # Note the JSON key is in camelCase: environmentApplicationVersionId
-  data_payload='{"source": "ci-cd", "environmentApplicationVersionId": "'"$environment_application_version_id"'"}'
+  data_payload='{"source": "ci-cd", "environment_application_version_id": "'"$environment_application_version_id"'"}'
 else
   # Otherwise, use the default payload.
   data_payload='{"source": "ci-cd"}'
