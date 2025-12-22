@@ -73,5 +73,3 @@ else
   echo "message=Failed to trigger test run (HTTP $http_code)" >> $GITHUB_OUTPUT
   exit 1
 fi
-
-rm -f response_body.json
