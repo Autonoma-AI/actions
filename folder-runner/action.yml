@@ -46,13 +46,13 @@ runs:
       shell: bash
       run: |
         if [ -n "${{ inputs.application-versions }}" ]; then
-          # Convert YAML array to JSON
-          app_versions_json=$(echo '${{ inputs.application-versions }}' | yq -o=json -I=0 '.')
+          # Convert the multiline YAML string to JSON using yq
+          app_versions_json=$(echo "${{ inputs.application-versions }}" | yq -o=json -I=0 '.')
           echo "app-versions-json=$app_versions_json" >> $GITHUB_OUTPUT
         else
           echo "app-versions-json=" >> $GITHUB_OUTPUT
         fi
-        
+
     - name: Trigger Folder Test Run
       id: run-tests
       shell: bash
