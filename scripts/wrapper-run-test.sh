@@ -8,7 +8,7 @@ max_wait_minutes=$2
 client_id=$3
 client_secret=$4
 type=$5  # "test" or "folder"
-application_versions_json=$6 
+application_versions_yaml=$6 
 blocking=${7:-false}
 
 RUN_TEST_URL="https://autonoma.app/api/test"
@@ -19,9 +19,9 @@ RUN_FOLDER_STATUS_URL="https://autonoma.app/api/run/folder"
 export GITHUB_OUTPUT=$(mktemp)
 
 if [ -z "$item_id" ] || [ -z "$max_wait_minutes" ] || [ -z "$client_id" ] || [ -z "$client_secret" ] || [ -z "$type" ]; then
-    echo "❌ Usage: $0 <item_id> <max_wait_minutes> <client_id> <client_secret> <type> [application_versions_json] [blocking]"
+    echo "❌ Usage: $0 <item_id> <max_wait_minutes> <client_id> <client_secret> <type> [application_versions_yaml] [blocking]"
     echo "   type: 'test' or 'folder'"
-    echo "   application_versions_json: Optional JSON array of application versions"
+    echo "   application_versions_yaml: Optional YAML array of application versions"
     echo "   blocking: Optional boolean (default: false)"
     exit 1
 fi
@@ -43,8 +43,52 @@ echo "   Type: $type"
 echo "   Max wait: ${max_wait_minutes} minutes"
 echo "   Blocking: $blocking"
 echo "   API URL: $BASE_URL"
-if [ -n "$application_versions_json" ]; then
-    echo "   Application versions: $application_versions_json"
+
+# Convert YAML to JSON if provided
+application_versions_json=""
+if [ -n "$application_versions_yaml" ] && [ "$application_versions_yaml" != "" ]; then
+    echo "   Application versions (YAML):"
+    echo "$application_versions_yaml" | sed 's/^/      /'
+    
+    # Use yq to convert YAML to JSON (if yq is available), otherwise use a simple parser
+    if command -v yq &> /dev/null; then
+        application_versions_json=$(echo "$application_versions_yaml" | yq -o=json '.')
+    else
+        # Simple YAML to JSON conversion for the specific format we use
+        # Parse lines like:
+        # - application-id: 'id1'
+        #   version-id: 'ver1'
+        # Into: [{"application-id":"id1","version-id":"ver1"}]
+        
+        application_versions_json=$(echo "$application_versions_yaml" | awk '
+        BEGIN { 
+            print "["
+            first = 1
+        }
+        /^[[:space:]]*-[[:space:]]*application-id:/ {
+            if (!first) print ","
+            first = 0
+            gsub(/^[[:space:]]*-[[:space:]]*application-id:[[:space:]]*/, "")
+            gsub(/[" \047]/, "")  # Remove quotes and spaces
+            printf "  {\"application-id\":\"%s\"", $0
+        }
+        /^[[:space:]]*version-id:/ {
+            gsub(/^[[:space:]]*version-id:[[:space:]]*/, "")
+            gsub(/[" \047]/, "")
+            printf ",\"version-id\":\"%s\"}", $0
+        }
+        /^[[:space:]]*version:/ && !/version-id/ {
+            gsub(/^[[:space:]]*version:[[:space:]]*/, "")
+            gsub(/[" \047]/, "")
+            printf ",\"version\":\"%s\"}", $0
+        }
+        END { 
+            print ""
+            print "]"
+        }')
+    fi
+    
+    echo "   Application versions (JSON): $application_versions_json"
 fi
 
 echo ""

@@ -4,6 +4,7 @@ RUN apk add --no-cache \
     bash \
     curl \
     jq \
+    yq \
     coreutils
 
 WORKDIR /autonoma
