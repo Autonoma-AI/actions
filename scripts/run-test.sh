@@ -51,28 +51,24 @@ http_code="${response: -3}"
 if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
   echo "✅ Test run triggered successfully (HTTP $http_code)"
   
-  echo "DEBUG: Checking response_body.json..."
   if [ -f response_body.json ]; then
-    echo "DEBUG: File exists, contents:"
-    cat response_body.json
-    
-    run_id=$(jq -r '.run_id // .folder_run_id' response_body.json 2>/dev/null || echo "")
-    echo "DEBUG: Extracted run_id: '$run_id'"
+    run_id=$(jq -r '.folderRunID // .folder_run_id // .run_id // empty' response_body.json 2>/dev/null || echo "")
     
     if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-      echo "DEBUG: Writing to GITHUB_OUTPUT: $GITHUB_OUTPUT"
       echo "run-id=$run_id" >> $GITHUB_OUTPUT
       echo "📋 Run ID: $run_id"
       
-      echo "url=https://autonoma.app/runs/$run_id" >> $GITHUB_OUTPUT
-      echo "🔗 View results at: https://autonoma.app/runs/$run_id"
+      url=$(jq -r '.url // empty' response_body.json 2>/dev/null || echo "")
+      if [ -z "$url" ]; then
+        url="https://autonoma.app/runs/$run_id"
+      fi
       
-      echo "message=Test run triggered successfully" >> $GITHUB_OUTPUT
-    else
-      echo "DEBUG: run_id is empty or null"
+      echo "url=$url" >> $GITHUB_OUTPUT
+      echo "🔗 View results at: $url"
+      
+      message=$(jq -r '.message // empty' response_body.json 2>/dev/null || echo "Test run triggered successfully")
+      echo "message=$message" >> $GITHUB_OUTPUT
     fi
-  else
-    echo "DEBUG: response_body.json does not exist"
   fi
 else
   echo "❌ Failed to trigger test run (HTTP $http_code)"
@@ -84,3 +80,5 @@ else
   echo "message=Failed to trigger test run (HTTP $http_code)" >> $GITHUB_OUTPUT
   exit 1
 fi
+
+rm -f response_body.json
