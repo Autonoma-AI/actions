@@ -1,5 +1,5 @@
 name: "Folder Test Runner"
-description: "Triggers folder test run and polls for completion status"
+description: "Triggers folder test run and optionally polls for completion status"
 author: "Autonoma AI"
 branding:
   icon: "folder"
@@ -14,29 +14,45 @@ inputs:
   client-secret:
     description: "Autonoma client secret for API authentication"
     required: true
+  application-versions:
+    description: "Array of application versions in YAML format"
+    required: false
+  blocking:
+    description: "Whether to wait for test completion (true) or run asynchronously (false)"
+    required: false
+    default: "false"
   max-wait-time:
-    description: "Maximum wait time in minutes before timeout (range: 10-20 minutes)"
+    description: "Maximum wait time in minutes before timeout (range: 10-20 minutes, only applies when blocking is true)"
     required: false
     default: "10"
-  environment-application-version-id:
-    description: "The ID of the application version to run the tests on"
-    required: false
 outputs:
   run-id:
     description: "ID of the test run returned by API"
     value: ${{ steps.run-tests.outputs.run-id }}
-  final-status:
-    description: "Final status of the test run"
-    value: ${{ steps.poll-status.outputs.final-status }}
-  message:
-    description: "Status message from the test run"
-    value: ${{ steps.poll-status.outputs.message }}
   url:
     description: "URL to view test results"
-    value: ${{ steps.poll-status.outputs.url }}
+    value: ${{ steps.poll-status.outputs.url || steps.run-tests.outputs.url }}
+  message:
+    description: "Status message from the test run"
+    value: ${{ steps.poll-status.outputs.message || steps.run-tests.outputs.message }}
+  final-status:
+    description: "Final status of the test run (only available when blocking is true)"
+    value: ${{ steps.poll-status.outputs.final-status }}
 runs:
   using: "composite"
   steps:
+    - name: Convert application versions to JSON
+      id: convert-versions
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.application-versions }}" ]; then
+          # Convert YAML array to JSON
+          app_versions_json=$(echo '${{ inputs.application-versions }}' | yq -o=json -I=0 '.')
+          echo "app-versions-json=$app_versions_json" >> $GITHUB_OUTPUT
+        else
+          echo "app-versions-json=" >> $GITHUB_OUTPUT
+        fi
+        
     - name: Trigger Folder Test Run
       id: run-tests
       shell: bash
@@ -48,9 +64,11 @@ runs:
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
           "${{ inputs.client-secret }}" \
-          "${{ inputs.environment-application-version-id }}"
+          '${{ steps.convert-versions.outputs.app-versions-json }}'
+          
     - name: Poll Test Status
       id: poll-status
+      if: inputs.blocking == 'true'
       shell: bash
       run: |
         chmod +x ${{ github.action_path }}/../scripts/poll-status.sh
