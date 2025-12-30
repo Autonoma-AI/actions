@@ -4,6 +4,8 @@ set -e
 echo "🚀 Triggering test run..."
 echo "DEBUG: Bash version: $BASH_VERSION"
 echo "DEBUG: Shell: $SHELL"
+echo "DEBUG: Current user: $(whoami)"
+echo "DEBUG: Working directory: $(pwd)"
 
 trigger_url=$1
 test_id=$2
@@ -14,6 +16,8 @@ application_versions_json=$6
 
 echo "DEBUG: application_versions_json received: '$application_versions_json'"
 echo "DEBUG: application_versions_json length: ${#application_versions_json}"
+echo "DEBUG: trigger_url: $trigger_url"
+echo "DEBUG: test_id: $test_id"
 
 if [ "$max_wait_minutes" -lt 10 ] || [ "$max_wait_minutes" -gt 20 ]; then
   echo "⚠️ max-wait-time must be between 10-20 minutes. Provided: ${max_wait_minutes}, using default time 10 minutes"
@@ -30,7 +34,6 @@ if [ -n "$application_versions_json" ] && [ "$application_versions_json" != "[]"
   
   echo "DEBUG: app_versions after jq transform: $app_versions"
   
-  # Add -c flag to make JSON compact (single line)
   data_payload=$(jq -n -c \
     --argjson app_versions "$app_versions" \
     '{
@@ -48,10 +51,13 @@ fi
 echo "DEBUG: Final data_payload length: ${#data_payload}"
 echo "DEBUG: Final data_payload content: $data_payload"
 
+# Write payload to file for inspection
 echo "$data_payload" > /tmp/payload.json
 echo "DEBUG: Payload written to /tmp/payload.json"
+echo "DEBUG: File size: $(wc -c < /tmp/payload.json) bytes"
 echo "DEBUG: File contents:"
 cat /tmp/payload.json
+echo ""  # newline after file contents
 
 run_url="$trigger_url/$test_id/run"
 echo "📡 Calling endpoint: $run_url"
@@ -61,8 +67,25 @@ echo "📦 Payload: $data_payload"
 echo "DEBUG: Curl version:"
 curl --version | head -n 1
 
-# Use --data-raw instead of -d to handle data properly
-echo "DEBUG: Sending request with curl..."
+echo "DEBUG: Testing curl command (verbose dry-run)..."
+curl -v \
+  -X POST \
+  -H "autonoma-client-id: $client_id" \
+  -H "autonoma-client-secret: REDACTED" \
+  -H "Content-Type: application/json" \
+  --data-raw "$data_payload" \
+  --connect-timeout 60 \
+  --max-time 60 \
+  "$run_url" \
+  --trace-ascii /tmp/curl_trace.txt \
+  -o /dev/null 2>&1 || true
+
+echo "DEBUG: Curl trace (first 50 lines):"
+head -n 50 /tmp/curl_trace.txt || echo "No trace file generated"
+echo ""
+
+# Actual request
+echo "DEBUG: Sending actual request with curl..."
 response=$(curl -s -w "%{http_code}" \
   -X POST \
   -H "autonoma-client-id: $client_id" \
@@ -77,11 +100,16 @@ response=$(curl -s -w "%{http_code}" \
 http_code="${response: -3}"
 
 echo "DEBUG: HTTP response code: $http_code"
+echo "DEBUG: Response body file size: $(wc -c < response_body.json 2>/dev/null || echo 0) bytes"
 
 if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
   echo "✅ Test run triggered successfully (HTTP $http_code)"
   
   if [ -f response_body.json ]; then
+    echo "DEBUG: Response body content:"
+    cat response_body.json
+    echo ""
+    
     run_id=$(jq -r '.folderRunID // .folder_run_id // .run_id // empty' response_body.json 2>/dev/null || echo "")
     
     if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
@@ -113,3 +141,4 @@ fi
 
 rm -f response_body.json
 rm -f /tmp/payload.json
+rm -f /tmp/curl_trace.txt
