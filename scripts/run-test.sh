@@ -59,6 +59,10 @@ echo "DEBUG: File contents:"
 cat /tmp/payload.json
 echo ""
 
+# Calculate expected Content-Length
+expected_content_length=$(echo -n "$data_payload" | wc -c)
+echo "DEBUG: Expected Content-Length: $expected_content_length bytes"
+
 run_url="$trigger_url/$test_id/run"
 echo "📡 Calling endpoint: $run_url"
 echo "📦 Payload: $data_payload"
@@ -67,9 +71,9 @@ echo "📦 Payload: $data_payload"
 echo "DEBUG: Curl version:"
 curl --version | head -n 1
 
-# Actual request
+# Actual request with verbose stderr capture
 echo "DEBUG: Sending actual request with curl..."
-response=$(curl -s -w "%{http_code}" \
+response=$(curl -s -w "%{http_code}" -v \
   -X POST \
   -H "autonoma-client-id: $client_id" \
   -H "autonoma-client-secret: $client_secret" \
@@ -78,9 +82,13 @@ response=$(curl -s -w "%{http_code}" \
   --connect-timeout 60 \
   --max-time 60 \
   "$run_url" \
-  -o response_body.json)
+  -o response_body.json 2>&1 | tee /tmp/curl_output.txt)
 
 http_code="${response: -3}"
+
+# Extract and display request headers from verbose output
+echo "DEBUG: Curl verbose output - Request headers:"
+grep -E "^> (POST|Host|Content-Type|Content-Length|autonoma-)" /tmp/curl_output.txt || echo "Could not extract request headers"
 
 echo "DEBUG: HTTP response code: $http_code"
 echo "DEBUG: Response body file size: $(wc -c < response_body.json 2>/dev/null || echo 0) bytes"
@@ -124,3 +132,4 @@ fi
 
 rm -f response_body.json
 rm -f /tmp/payload.json
+rm -f /tmp/curl_output.txt
