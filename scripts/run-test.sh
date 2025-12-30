@@ -3,9 +3,7 @@ set -e
 
 echo "🚀 Triggering test run..."
 echo "DEBUG: Bash version: $BASH_VERSION"
-echo "DEBUG: Shell: $SHELL"
-echo "DEBUG: Current user: $(whoami)"
-echo "DEBUG: Working directory: $(pwd)"
+echo "DEBUG: Python version: $(python3 --version)"
 
 trigger_url=$1
 test_id=$2
@@ -51,44 +49,79 @@ fi
 echo "DEBUG: Final data_payload length: ${#data_payload}"
 echo "DEBUG: Final data_payload content: $data_payload"
 
-# Write payload to file for inspection
-echo "$data_payload" > /tmp/payload.json
-echo "DEBUG: Payload written to /tmp/payload.json"
-echo "DEBUG: File size: $(wc -c < /tmp/payload.json) bytes"
-echo "DEBUG: File contents:"
-cat /tmp/payload.json
-echo ""
-
-# Calculate expected Content-Length
-expected_content_length=$(echo -n "$data_payload" | wc -c)
-echo "DEBUG: Expected Content-Length: $expected_content_length bytes"
-
 run_url="$trigger_url/$test_id/run"
 echo "📡 Calling endpoint: $run_url"
 echo "📦 Payload: $data_payload"
 
-# Show curl version
-echo "DEBUG: Curl version:"
-curl --version | head -n 1
+# Use Python to make the request
+echo "DEBUG: Sending request with Python..."
+python3 << EOF
+import urllib.request
+import json
+import sys
 
-# Actual request with verbose stderr capture
-echo "DEBUG: Sending actual request with curl..."
-response=$(curl -s -w "%{http_code}" -v \
-  -X POST \
-  -H "autonoma-client-id: $client_id" \
-  -H "autonoma-client-secret: $client_secret" \
-  -H "Content-Type: application/json" \
-  --data-raw "$data_payload" \
-  --connect-timeout 60 \
-  --max-time 60 \
-  "$run_url" \
-  -o response_body.json 2>&1 | tee /tmp/curl_output.txt)
+payload = '''$data_payload'''
+url = "$run_url"
+client_id = "$client_id"
+client_secret = "$client_secret"
 
-http_code="${response: -3}"
+print(f"DEBUG: Python payload length: {len(payload)} bytes")
+print(f"DEBUG: Python payload content: {payload}")
 
-# Extract and display request headers from verbose output
-echo "DEBUG: Curl verbose output - Request headers:"
-grep -E "^> (POST|Host|Content-Type|Content-Length|autonoma-)" /tmp/curl_output.txt || echo "Could not extract request headers"
+headers = {
+    'Content-Type': 'application/json',
+    'autonoma-client-id': client_id,
+    'autonoma-client-secret': client_secret
+}
+
+try:
+    req = urllib.request.Request(
+        url,
+        data=payload.encode('utf-8'),
+        headers=headers,
+        method='POST'
+    )
+    
+    print(f"DEBUG: Request headers: {dict(req.headers)}")
+    print(f"DEBUG: Request data length: {len(req.data)} bytes")
+    
+    with urllib.request.urlopen(req, timeout=60) as response:
+        response_body = response.read().decode('utf-8')
+        status_code = response.status
+        
+        print(f"DEBUG: HTTP response code: {status_code}")
+        print(f"DEBUG: Response body: {response_body}")
+        
+        # Write response to file for bash to process
+        with open('response_body.json', 'w') as f:
+            f.write(response_body)
+        
+        # Write status code to file
+        with open('/tmp/status_code.txt', 'w') as f:
+            f.write(str(status_code))
+            
+        sys.exit(0)
+        
+except urllib.error.HTTPError as e:
+    error_body = e.read().decode('utf-8')
+    print(f"DEBUG: HTTP error {e.code}")
+    print(f"DEBUG: Error response: {error_body}")
+    
+    with open('response_body.json', 'w') as f:
+        f.write(error_body)
+    with open('/tmp/status_code.txt', 'w') as f:
+        f.write(str(e.code))
+    
+    sys.exit(1)
+    
+except Exception as e:
+    print(f"ERROR: {str(e)}")
+    sys.exit(1)
+EOF
+
+# Check if Python script succeeded
+python_exit_code=$?
+http_code=$(cat /tmp/status_code.txt 2>/dev/null || echo "000")
 
 echo "DEBUG: HTTP response code: $http_code"
 echo "DEBUG: Response body file size: $(wc -c < response_body.json 2>/dev/null || echo 0) bytes"
@@ -131,5 +164,4 @@ else
 fi
 
 rm -f response_body.json
-rm -f /tmp/payload.json
-rm -f /tmp/curl_output.txt
+rm -f /tmp/status_code.txt
