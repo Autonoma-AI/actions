@@ -2,6 +2,8 @@
 set -e
 
 echo "🚀 Triggering test run..."
+echo "DEBUG: Bash version: $BASH_VERSION"
+echo "DEBUG: Shell: $SHELL"
 
 trigger_url=$1
 test_id=$2
@@ -28,7 +30,8 @@ if [ -n "$application_versions_json" ] && [ "$application_versions_json" != "[]"
   
   echo "DEBUG: app_versions after jq transform: $app_versions"
   
-  data_payload=$(jq -n \
+  # Add -c flag to make JSON compact (single line)
+  data_payload=$(jq -n -c \
     --argjson app_versions "$app_versions" \
     '{
       source: "ci-cd",
@@ -36,7 +39,7 @@ if [ -n "$application_versions_json" ] && [ "$application_versions_json" != "[]"
       application_versions: $app_versions
     }')
   
-  echo "DEBUG: data_payload with app_versions: $data_payload"
+  echo "DEBUG: data_payload with app_versions (compact): $data_payload"
 else
   echo "DEBUG: No application versions provided, using default payload"
   data_payload='{"source": "ci-cd"}'
@@ -45,16 +48,27 @@ fi
 echo "DEBUG: Final data_payload length: ${#data_payload}"
 echo "DEBUG: Final data_payload content: $data_payload"
 
+echo "$data_payload" > /tmp/payload.json
+echo "DEBUG: Payload written to /tmp/payload.json"
+echo "DEBUG: File contents:"
+cat /tmp/payload.json
+
 run_url="$trigger_url/$test_id/run"
 echo "📡 Calling endpoint: $run_url"
 echo "📦 Payload: $data_payload"
 
+# Show curl version
+echo "DEBUG: Curl version:"
+curl --version | head -n 1
+
+# Use --data-raw instead of -d to handle data properly
+echo "DEBUG: Sending request with curl..."
 response=$(curl -s -w "%{http_code}" \
   -X POST \
   -H "autonoma-client-id: $client_id" \
   -H "autonoma-client-secret: $client_secret" \
   -H "Content-Type: application/json" \
-  -d "$data_payload" \
+  --data-raw "$data_payload" \
   --connect-timeout 60 \
   --max-time 60 \
   "$run_url" \
@@ -98,3 +112,4 @@ else
 fi
 
 rm -f response_body.json
+rm -f /tmp/payload.json
