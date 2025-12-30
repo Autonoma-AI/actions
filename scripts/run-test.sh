@@ -57,7 +57,7 @@ echo "DEBUG: Payload written to /tmp/payload.json"
 echo "DEBUG: File size: $(wc -c < /tmp/payload.json) bytes"
 echo "DEBUG: File contents:"
 cat /tmp/payload.json
-echo ""  # newline after file contents
+echo ""
 
 run_url="$trigger_url/$test_id/run"
 echo "📡 Calling endpoint: $run_url"
@@ -66,23 +66,6 @@ echo "📦 Payload: $data_payload"
 # Show curl version
 echo "DEBUG: Curl version:"
 curl --version | head -n 1
-
-echo "DEBUG: Testing curl command (verbose dry-run)..."
-curl -v \
-  -X POST \
-  -H "autonoma-client-id: $client_id" \
-  -H "autonoma-client-secret: REDACTED" \
-  -H "Content-Type: application/json" \
-  --data-raw "$data_payload" \
-  --connect-timeout 60 \
-  --max-time 60 \
-  "$run_url" \
-  --trace-ascii /tmp/curl_trace.txt \
-  -o /dev/null 2>&1 || true
-
-echo "DEBUG: Curl trace (first 50 lines):"
-head -n 50 /tmp/curl_trace.txt || echo "No trace file generated"
-echo ""
 
 # Actual request
 echo "DEBUG: Sending actual request with curl..."
@@ -141,4 +124,3 @@ fi
 
 rm -f response_body.json
 rm -f /tmp/payload.json
-rm -f /tmp/curl_trace.txt
