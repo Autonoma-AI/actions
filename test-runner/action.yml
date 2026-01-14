@@ -17,6 +17,10 @@ inputs:
   application-versions:
     description: "Array of application versions in YAML format"
     required: false
+  run-on-latest:
+    description: "Whether to run tests on the latest application versions (true) or use specified versions (false)"
+    required: false
+    default: "false"
   blocking:
     description: "Whether to wait for test completion (true) or run asynchronously (false)"
     required: false
@@ -65,6 +69,7 @@ runs:
           "${{ inputs.client-id }}" \
           "${{ inputs.client-secret }}" \
           '${{ steps.convert-versions.outputs.app-versions-json }}' \
+          "${{ inputs.run-on-latest }}" \
           "test"
           
     - name: Poll Test Status

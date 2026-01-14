@@ -9,7 +9,8 @@ max_wait_minutes=$3
 client_id=$4
 client_secret=$5
 application_versions_json=$6
-run_type=$7
+run_on_latest=${7:-false}
+run_type=$8
 
 # Validate that run_type is provided
 if [ -z "$run_type" ]; then
@@ -23,9 +24,40 @@ if [ "$max_wait_minutes" -lt 10 ] || [ "$max_wait_minutes" -gt 20 ]; then
 fi
 
 echo "📋 Run type: $run_type"
+echo "📋 Run on latest: $run_on_latest"
 
 # Build payload based on run type
-if [ -n "$application_versions_json" ] && [ "$application_versions_json" != "[]" ]; then
+if [ "$run_on_latest" = "true" ]; then
+  # When run_on_latest is true, don't include application_versions
+  case "$run_type" in
+    "folder")
+      data_payload=$(jq -n -c \
+        '{
+          source: "ci-cd",
+          run_on_latest: true,
+          recursive: true
+        }')
+      ;;
+    "tag")
+      data_payload=$(jq -n -c \
+        '{
+          source: "ci-cd",
+          run_on_latest: true
+        }')
+      ;;
+    "test")
+      data_payload=$(jq -n -c \
+        '{
+          source: "ci-cd",
+          run_on_latest: true
+        }')
+      ;;
+    *)
+      echo "❌ Unknown run type: $run_type. Must be one of: folder, tag, test"
+      exit 1
+      ;;
+  esac
+elif [ -n "$application_versions_json" ] && [ "$application_versions_json" != "[]" ]; then
   app_versions=$(echo "$application_versions_json" | jq -c '[.[] | {
     application_id: (."application-id"),
     application_version_ids: [(."version-id")]
@@ -67,10 +99,10 @@ if [ -n "$application_versions_json" ] && [ "$application_versions_json" != "[]"
       ;;
   esac
 else
-  # If no application versions provided
+  # If no application versions provided and run_on_latest is false
   case "$run_type" in
     "tag")
-      echo "❌ application_versions is required for tag runs"
+      echo "❌ application_versions is required for tag runs when run_on_latest is false"
       exit 1
       ;;
     "folder")
