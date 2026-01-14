@@ -64,7 +64,8 @@ runs:
           "${{ inputs.max-wait-time }}" \
           "${{ inputs.client-id }}" \
           "${{ inputs.client-secret }}" \
-          '${{ steps.convert-versions.outputs.app-versions-json }}'
+          '${{ steps.convert-versions.outputs.app-versions-json }}' \
+          "tag"
           
     - name: Poll Test Status
       id: poll-status
