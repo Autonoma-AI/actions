@@ -1,0 +1,81 @@
+name: "Tag Test Runner"
+description: "Triggers tag test run and optionally polls for completion status"
+author: "Autonoma AI"
+branding:
+  icon: "tag"
+  color: "green"
+inputs:
+  tag-id:
+    description: "Tag id to run test"
+    required: true
+  client-id:
+    description: "Autonoma client ID for API authentication"
+    required: true
+  client-secret:
+    description: "Autonoma client secret for API authentication"
+    required: true
+  application-versions:
+    description: "Array of application versions in YAML format"
+    required: true
+  blocking:
+    description: "Whether to wait for test completion (true) or run asynchronously (false)"
+    required: false
+    default: "false"
+  max-wait-time:
+    description: "Maximum wait time in minutes before timeout (range: 10-20 minutes, only applies when blocking is true)"
+    required: false
+    default: "10"
+outputs:
+  run-id:
+    description: "ID of the test run returned by API"
+    value: ${{ steps.run-tests.outputs.run-id }}
+  url:
+    description: "URL to view test results"
+    value: ${{ steps.poll-status.outputs.url || steps.run-tests.outputs.url }}
+  message:
+    description: "Status message from the test run"
+    value: ${{ steps.poll-status.outputs.message || steps.run-tests.outputs.message }}
+  final-status:
+    description: "Final status of the test run (only available when blocking is true)"
+    value: ${{ steps.poll-status.outputs.final-status }}
+runs:
+  using: "composite"
+  steps:
+    - name: Convert application versions to JSON
+      id: convert-versions
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.application-versions }}" ]; then
+          # Convert the multiline YAML string to JSON using yq
+          app_versions_json=$(echo "${{ inputs.application-versions }}" | yq -o=json -I=0 '.')
+          echo "app-versions-json=$app_versions_json" >> $GITHUB_OUTPUT
+        else
+          echo "app-versions-json=" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Trigger Tag Test Run
+      id: run-tests
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/../scripts/run-test.sh
+        ${{ github.action_path }}/../scripts/run-test.sh \
+          "https://autonoma.app/api/tag" \
+          "${{ inputs.tag-id }}" \
+          "${{ inputs.max-wait-time }}" \
+          "${{ inputs.client-id }}" \
+          "${{ inputs.client-secret }}" \
+          '${{ steps.convert-versions.outputs.app-versions-json }}'
+          
+    - name: Poll Test Status
+      id: poll-status
+      if: inputs.blocking == 'true'
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/../scripts/poll-status.sh
+        ${{ github.action_path }}/../scripts/poll-status.sh \
+          "https://autonoma.app/api/run/tag" \
+          "${{ steps.run-tests.outputs.run-id }}" \
+          "${{ inputs.max-wait-time }}" \
+          "${{ inputs.client-id }}" \
+          "${{ inputs.client-secret }}" \
+          "tag"

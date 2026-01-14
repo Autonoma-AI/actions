@@ -9,28 +9,83 @@ max_wait_minutes=$3
 client_id=$4
 client_secret=$5
 application_versions_json=$6
+run_type=$7
 
+# Validate that run_type is provided
+if [ -z "$run_type" ]; then
+  echo "❌ Error: run_type parameter is required"
+  exit 1
+fi
 
 if [ "$max_wait_minutes" -lt 10 ] || [ "$max_wait_minutes" -gt 20 ]; then
   echo "⚠️ max-wait-time must be between 10-20 minutes. Provided: ${max_wait_minutes}, using default time 10 minutes"
   max_wait_minutes=10
 fi
 
+echo "📋 Run type: $run_type"
+
+# Build payload based on run type
 if [ -n "$application_versions_json" ] && [ "$application_versions_json" != "[]" ]; then
   app_versions=$(echo "$application_versions_json" | jq -c '[.[] | {
     application_id: (."application-id"),
     application_version_ids: [(."version-id")]
   }]')
   
-  data_payload=$(jq -n -c \
-    --argjson app_versions "$app_versions" \
-    '{
-      source: "ci-cd",
-      recursive: true,
-      application_versions: $app_versions
-    }')
+  case "$run_type" in
+    "folder")
+      # Folder runs use recursive flag
+      data_payload=$(jq -n -c \
+        --argjson app_versions "$app_versions" \
+        '{
+          source: "ci-cd",
+          recursive: true,
+          application_versions: $app_versions
+        }')
+      ;;
+    "tag")
+      # Tag runs don't use recursive flag
+      data_payload=$(jq -n -c \
+        --argjson app_versions "$app_versions" \
+        '{
+          source: "ci-cd",
+          application_versions: $app_versions
+        }')
+      ;;
+    "test")
+      # Test runs use application_version_id (single version)
+      version_id=$(echo "$application_versions_json" | jq -r '.[0]."version-id"')
+      data_payload=$(jq -n -c \
+        --arg version_id "$version_id" \
+        '{
+          source: "ci-cd",
+          application_version_id: $version_id
+        }')
+      ;;
+    *)
+      echo "❌ Unknown run type: $run_type. Must be one of: folder, tag, test"
+      exit 1
+      ;;
+  esac
 else
-  data_payload='{"source": "ci-cd"}'
+  # If no application versions provided
+  case "$run_type" in
+    "tag")
+      echo "❌ application_versions is required for tag runs"
+      exit 1
+      ;;
+    "folder")
+      # For folders, allow running without application versions (non-recursive)
+      data_payload='{"source": "ci-cd"}'
+      ;;
+    "test")
+      # For tests, allow running without application version (uses test's default)
+      data_payload='{"source": "ci-cd"}'
+      ;;
+    *)
+      echo "❌ Unknown run type: $run_type. Must be one of: folder, tag, test"
+      exit 1
+      ;;
+  esac
 fi
 
 run_url="$trigger_url/$test_id/run"
@@ -109,13 +164,27 @@ if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
       echo "📋 Run ID: $run_id"
       
       url=$(jq -r '.url // empty' response_body.json 2>/dev/null || echo "")
-      if [ -z "$url" ]; then
-        url="https://autonoma.app/runs/$run_id"
+      if [ -z "$url" ] || [ "$url" == "null" ]; then
+        case "$run_type" in
+          "tag")
+            url="https://autonoma.app/run/tag/$run_id"
+            ;;
+          "folder")
+            url="https://autonoma.app/run/folder/$run_id"
+            ;;
+          "test")
+            url="https://autonoma.app/run/$run_id"
+            ;;
+        esac
       fi
       
       echo "url=$url" >> $GITHUB_OUTPUT
       echo "🔗 View results at: $url"
       
+      message=$(jq -r '.message // empty' response_body.json 2>/dev/null || echo "Test run triggered successfully")
+      echo "message=$message" >> $GITHUB_OUTPUT
+    else
+      echo "⚠️ Warning: Could not extract run ID from response"
       message=$(jq -r '.message // empty' response_body.json 2>/dev/null || echo "Test run triggered successfully")
       echo "message=$message" >> $GITHUB_OUTPUT
     fi
